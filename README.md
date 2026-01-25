@@ -37,10 +37,11 @@ npm install
 ```
 
 2. Set up NeonDB:
-   - Create account at https://neon.tech
-   - Create new project and database
-   - Copy connection string to `.env` as `DATABASE_URL`
+   - Go to https://console.neon.tech/app/projects/flat-rice-23279598
+   - Click "Connection Details" and copy the connection string
+   - Create `.env` file in server directory with: `DATABASE_URL=your_connection_string`
    - Run schema: `psql $DATABASE_URL -f schema.sql`
+   - Or use NeonDB SQL Editor in the console to run the schema.sql contents
 
 3. Start server:
 ```bash
