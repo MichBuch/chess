@@ -1,58 +1,73 @@
-import io, { Socket } from 'socket.io-client';
 import { Move, ChatMessage } from '../types';
 
-const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL || 'http://localhost:3000';
-
+// Mock socket service for local/offline play
 class SocketService {
-  private socket: Socket | null = null;
+  private listeners: { [key: string]: Function[] } = {};
 
   connect(userId: string) {
-    this.socket = io(SOCKET_URL, {
-      query: { userId },
-    });
-
-    this.socket.on('connect', () => {
-      console.log('Socket connected');
-    });
-
-    this.socket.on('disconnect', () => {
-      console.log('Socket disconnected');
-    });
+    console.log('Mock socket connected for user:', userId);
   }
 
   disconnect() {
-    if (this.socket) {
-      this.socket.disconnect();
-      this.socket = null;
-    }
+    console.log('Mock socket disconnected');
+    this.listeners = {};
   }
 
   joinGame(gameId: string) {
-    this.socket?.emit('join_game', { gameId });
+    console.log('Joined game:', gameId);
   }
 
   leaveGame(gameId: string) {
-    this.socket?.emit('leave_game', { gameId });
+    console.log('Left game:', gameId);
   }
 
   sendMove(gameId: string, move: Move) {
-    this.socket?.emit('move', { gameId, move });
+    // For local play, immediately trigger the move callback
+    // This simulates receiving the move back for local multiplayer
+    setTimeout(() => {
+      this.emit('move', move);
+    }, 100);
   }
 
   onMove(callback: (move: Move) => void) {
-    this.socket?.on('move', callback);
+    this.on('move', callback);
   }
 
   sendChatMessage(gameId: string, message: string) {
-    this.socket?.emit('chat_message', { gameId, message });
+    const chatMessage: ChatMessage = {
+      id: Date.now().toString(),
+      userId: 'local_user',
+      username: 'Player',
+      message,
+      timestamp: Date.now(),
+    };
+    
+    // Simulate receiving the chat message
+    setTimeout(() => {
+      this.emit('chat_message', chatMessage);
+    }, 100);
   }
 
   onChatMessage(callback: (message: ChatMessage) => void) {
-    this.socket?.on('chat_message', callback);
+    this.on('chat_message', callback);
   }
 
   removeAllListeners() {
-    this.socket?.removeAllListeners();
+    this.listeners = {};
+  }
+
+  // Helper methods for mock event system
+  private on(event: string, callback: Function) {
+    if (!this.listeners[event]) {
+      this.listeners[event] = [];
+    }
+    this.listeners[event].push(callback);
+  }
+
+  private emit(event: string, data: any) {
+    if (this.listeners[event]) {
+      this.listeners[event].forEach(callback => callback(data));
+    }
   }
 }
 

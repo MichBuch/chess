@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .chess-board {
+            width: 400px;
+            height: 400px;
+            margin: 20px auto;
+            border: 2px solid #333;
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+        }
+        .square {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .square.light {
+            background-color: #f0d9b5;
+        }
+        .square.dark {
+            background-color: #b58863;
+        }
+        .square.selected {
+            background-color: #7fc97f !important;
+        }
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 0 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .status {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chess Game</h1>
+        <div class="status" id="status">White to move</div>
+        <div class="chess-board" id="chessBoard"></div>
+        <div class="controls">
+            <button onclick="newGame()">New Game</button>
+            <button onclick="undoMove()">Undo Move</button>
+        </div>
+    </div>
+
+    <script>
+        // Simple chess game implementation
+        const initialBoard = [
+            ['♜', '♞', '♝', '♛', '♚', '♝', '♞', '♜'],
+            ['♟', '♟', '♟', '♟', '♟', '♟', '♟', '♟'],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['♙', '♙', '♙', '♙', '♙', '♙', '♙', '♙'],
+            ['♖', '♘', '♗', '♕', '♔', '♗', '♘', '♖']
+        ];
+
+        let board = JSON.parse(JSON.stringify(initialBoard));
+        let currentPlayer = 'white';
+        let selectedSquare = null;
+        let moveHistory = [];
+
+        function createBoard() {
+            const boardElement = document.getElementById('chessBoard');
+            boardElement.innerHTML = '';
+            
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const square = document.createElement('div');
+                    square.className = `square ${(row + col) % 2 === 0 ? 'light' : 'dark'}`;
+                    square.dataset.row = row;
+                    square.dataset.col = col;
+                    square.textContent = board[row][col];
+                    square.addEventListener('click', handleSquareClick);
+                    boardElement.appendChild(square);
+                }
+            }
+        }
+
+        function handleSquareClick(event) {
+            const row = parseInt(event.target.dataset.row);
+            const col = parseInt(event.target.dataset.col);
+            
+            if (selectedSquare) {
+                // Try to make a move
+                if (selectedSquare.row !== row || selectedSquare.col !== col) {
+                    makeMove(selectedSquare.row, selectedSquare.col, row, col);
+                }
+                clearSelection();
+            } else {
+                // Select a piece
+                if (board[row][col] && isPlayerPiece(board[row][col], currentPlayer)) {
+                    selectedSquare = { row, col };
+                    event.target.classList.add('selected');
+                }
+            }
+        }
+
+        function isPlayerPiece(piece, player) {
+            const whitePieces = ['♔', '♕', '♖', '♗', '♘', '♙'];
+            const blackPieces = ['♚', '♛', '♜', '♝', '♞', '♟'];
+            
+            if (player === 'white') {
+                return whitePieces.includes(piece);
+            } else {
+                return blackPieces.includes(piece);
+            }
+        }
+
+        function makeMove(fromRow, fromCol, toRow, toCol) {
+            const piece = board[fromRow][fromCol];
+            const capturedPiece = board[toRow][toCol];
+            
+            // Simple move validation (basic implementation)
+            if (isValidMove(fromRow, fromCol, toRow, toCol)) {
+                // Save move to history
+                moveHistory.push({
+                    from: { row: fromRow, col: fromCol },
+                    to: { row: toRow, col: toCol },
+                    piece: piece,
+                    captured: capturedPiece
+                });
+                
+                // Make the move
+                board[toRow][toCol] = piece;
+                board[fromRow][fromCol] = '';
+                
+                // Switch players
+                currentPlayer = currentPlayer === 'white' ? 'black' : 'white';
+                updateStatus();
+                createBoard();
+            }
+        }
+
+        function isValidMove(fromRow, fromCol, toRow, toCol) {
+            // Basic validation - just check if target square is not occupied by same color
+            const targetPiece = board[toRow][toCol];
+            if (targetPiece && isPlayerPiece(targetPiece, currentPlayer)) {
+                return false;
+            }
+            return true; // Simplified - in real chess, each piece has specific movement rules
+        }
+
+        function clearSelection() {
+            selectedSquare = null;
+            document.querySelectorAll('.square.selected').forEach(square => {
+                square.classList.remove('selected');
+            });
+        }
+
+        function updateStatus() {
+            document.getElementById('status').textContent = `${currentPlayer === 'white' ? 'White' : 'Black'} to move`;
+        }
+
+        function newGame() {
+            board = JSON.parse(JSON.stringify(initialBoard));
+            currentPlayer = 'white';
+            selectedSquare = null;
+            moveHistory = [];
+            updateStatus();
+            createBoard();
+        }
+
+        function undoMove() {
+            if (moveHistory.length > 0) {
+                const lastMove = moveHistory.pop();
+                board[lastMove.from.row][lastMove.from.col] = lastMove.piece;
+                board[lastMove.to.row][lastMove.to.col] = lastMove.captured;
+                currentPlayer = currentPlayer === 'white' ? 'black' : 'white';
+                updateStatus();
+                createBoard();
+            }
+        }
+
+        // Initialize the game
+        createBoard();
+        updateStatus();
+    </script>
+</body>
+</html>
